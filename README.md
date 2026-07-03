@@ -1,1 +1,1031 @@
-# CalTracker
+
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+							<style>
+								body {
+									background-color: white; /* Ensure the iframe has a white background */
+								}
+
+								
+							</style>
+                        </head>
+                        <body>
+                            <!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CalTracker</title>
+
+    <!-- PWA Meta -->
+    <meta name="theme-color" content="#6C63FF">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CalTracker">
+    <meta name="mobile-web-app-capable" content="yes">
+
+    <!-- Inline Manifest via JS (ไม่ต้องไฟล์แยก) -->
+    <script>
+    // สร้าง manifest inline
+    const manifestData = {
+        name: "CalTracker - นับแคลอาหาร",
+        short_name: "CalTracker",
+        description: "แอพนับแคลอาหาร ดูแลสุขภาพง่ายๆ",
+        start_url: window.location.href,
+        display: "standalone",
+        background_color: "#0F0F1A",
+        theme_color: "#6C63FF",
+        orientation: "portrait",
+        lang: "th",
+        icons: [{
+            src: generateIconDataURL(192),
+            sizes: "192x192",
+            type: "image/png",
+            purpose: "any maskable"
+        }, {
+            src: generateIconDataURL(512),
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "any maskable"
+        }]
+    };
+
+    function generateIconDataURL(size) {
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const r = size * 0.18;
+
+        // Background
+        const bg = ctx.createLinearGradient(0, 0, size, size);
+        bg.addColorStop(0, '#1A1A2E');
+        bg.addColorStop(1, '#16213E');
+        ctx.fillStyle = bg;
+        ctx.beginPath();
+        ctx.moveTo(r,0); ctx.lineTo(size-r,0);
+        ctx.quadraticCurveTo(size,0,size,r);
+        ctx.lineTo(size,size-r);
+        ctx.quadraticCurveTo(size,size,size-r,size);
+        ctx.lineTo(r,size);
+        ctx.quadraticCurveTo(0,size,0,size-r);
+        ctx.lineTo(0,r);
+        ctx.quadraticCurveTo(0,0,r,0);
+        ctx.closePath(); ctx.fill();
+
+        // Ring
+        const cx=size/2, cy=size/2, rad=size*0.30;
+        ctx.beginPath(); ctx.arc(cx,cy,rad,0,Math.PI*2);
+        ctx.strokeStyle='rgba(255,255,255,0.1)';
+        ctx.lineWidth=size*0.06; ctx.stroke();
+
+        const rg = ctx.createLinearGradient(cx-rad,0,cx+rad,0);
+        rg.addColorStop(0,'#6C63FF'); rg.addColorStop(1,'#FF6584');
+        ctx.beginPath(); ctx.arc(cx,cy,rad,-Math.PI/2,Math.PI*1.2);
+        ctx.strokeStyle=rg; ctx.lineWidth=size*0.06;
+        ctx.lineCap='round'; ctx.stroke();
+
+        // Emoji
+        ctx.font=`${size*0.32}px serif`;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('🥗',cx,cy*0.95);
+
+        // Text
+        ctx.font=`bold ${size*0.09}px sans-serif`;
+        ctx.fillStyle='rgba(255,255,255,0.85)';
+        ctx.textBaseline='alphabetic';
+        ctx.fillText('CalTracker',cx,size*0.90);
+
+        return canvas.toDataURL('image/png');
+    }
+
+    // Inject manifest link
+    const blob = new Blob([JSON.stringify(manifestData)], {type:'application/json'});
+    const manifestURL = URL.createObjectURL(blob);
+    document.addEventListener('DOMContentLoaded', () => {
+        const link = document.createElement('link');
+        link.rel = 'manifest'; link.href = manifestURL;
+        document.head.appendChild(link);
+
+        // Apple touch icon
+        const iconLink = document.createElement('link');
+        iconLink.rel = 'apple-touch-icon';
+        iconLink.href = generateIconDataURL(192);
+        document.head.appendChild(iconLink);
+    });
+    </script>
+
+    <style>
+        /* ===== ทุก style เหมือนเดิมจากโค้ดก่อนหน้า ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6C63FF; --secondary: #FF6584;
+            --success: #43D9AD; --warning: #FFB347; --danger: #FF6B6B;
+            --bg: #0F0F1A; --card: #1A1A2E; --card2: #16213E;
+            --text: #E8E8F0; --text2: #9999BB; --border: #2A2A4A;
+            --protein: #FF6584; --fat: #FFB347; --sugar: #FF6B6B;
+            --carb: #6C63FF; --water: #43D9AD;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text);
+            min-height: 100vh;
+            /* iOS safe area */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* iOS Status Bar Fix */
+        .header {
+            padding-top: max(16px, env(safe-area-inset-top)) !important;
+        }
+        .bottom-nav {
+            padding-bottom: max(6px, env(safe-area-inset-bottom)) !important;
+        }
+
+        /* ป้องกัน zoom เมื่อ tap input บน iOS */
+        input, select, textarea {
+            font-size: 16px !important;
+        }
+
+        /* Touch ripple effect */
+        .nav-item, .fab-btn, .btn, .meal-btn, .goal-card, .suggestion-item {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Smooth scroll */
+        .modal { scroll-behavior: smooth; -webkit-overflow-scrolling: touch; }
+
+        /* ==== ใส่ style ทั้งหมดจากโค้ดก่อนหน้าต่อจากนี้ ==== */
+        #splash { position:fixed;inset:0;background:linear-gradient(135deg,#0F0F1A,#1A1A2E);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.5s; }
+        .splash-icon{font-size:80px;margin-bottom:20px;animation:bounce 1s infinite}
+        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-15px)}}
+        .splash-title{font-size:36px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .splash-sub{color:var(--text2);margin-top:8px}
+        .splash-loader{margin-top:40px;width:200px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+        .splash-loader-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));animation:load 2s forwards}
+        @keyframes load{from{width:0}to{width:100%}}
+        #setup{display:none;min-height:100vh;padding:40px 20px;max-width:500px;margin:0 auto}
+        .setup-title{font-size:28px;font-weight:800;margin-bottom:8px;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .setup-sub{color:var(--text2);margin-bottom:40px}
+        .form-group{margin-bottom:24px}
+        .form-label{display:block;margin-bottom:8px;color:var(--text2);font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+        .form-input{width:100%;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:16px;outline:none;transition:border-color 0.3s}
+        .form-input:focus{border-color:var(--primary)}
+        .form-select{width:100%;padding:16px;background:var(--card);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:16px;outline:none;cursor:pointer}
+        .goal-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+        .goal-card{padding:16px 8px;background:var(--card);border:2px solid var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all 0.3s}
+        .goal-card:hover{border-color:var(--primary)}
+        .goal-card.active{border-color:var(--primary);background:rgba(108,99,255,0.15)}
+        .goal-card .icon{font-size:28px;display:block;margin-bottom:6px}
+        .goal-card .label{font-size:12px;color:var(--text2)}
+        .btn{width:100%;padding:18px;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.3s}
+        .btn-primary{background:linear-gradient(135deg,var(--primary),var(--secondary));color:white}
+        .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(108,99,255,0.4)}
+        .btn-secondary{background:var(--card);color:var(--text);border:1px solid var(--border)}
+        .btn-danger{background:rgba(255,107,107,0.1);color:var(--danger);border:1px solid var(--danger)}
+        .btn-sm{padding:10px 16px;font-size:13px;width:auto;border-radius:10px}
+        .header{background:var(--card);padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+        .header-top{display:flex;justify-content:space-between;align-items:center}
+        .header-greeting{font-size:13px;color:var(--text2)}
+        .header-title{font-size:20px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .header-date{font-size:12px;color:var(--text2);margin-top:2px}
+        .icon-btn{width:38px;height:38px;border-radius:10px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s}
+        #app{display:none;padding-bottom:80px}
+        .calorie-section{padding:20px;text-align:center}
+        .ring-container{position:relative;width:180px;height:180px;margin:0 auto 16px}
+        .ring-svg{transform:rotate(-90deg)}
+        .ring-bg{fill:none;stroke:var(--border);stroke-width:12}
+        .ring-progress{fill:none;stroke-width:12;stroke-linecap:round;transition:stroke-dashoffset 1s ease}
+        .ring-info{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:120px}
+        .ring-cal{font-size:32px;font-weight:800;line-height:1}
+        .ring-label{font-size:11px;color:var(--text2);margin-top:3px}
+        .ring-remaining{font-size:12px;color:var(--text2);margin-top:3px}
+        .calorie-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+        .cal-stat{background:var(--card);border-radius:12px;padding:12px;border:1px solid var(--border)}
+        .cal-stat-value{font-size:18px;font-weight:700}
+        .cal-stat-label{font-size:10px;color:var(--text2);margin-top:2px}
+        .section{padding:0 16px 16px}
+        .section-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        .macro-card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)}
+        .macro-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .macro-name{font-size:12px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:5px}
+        .macro-dot{width:7px;height:7px;border-radius:50%}
+        .macro-value{font-size:16px;font-weight:800}
+        .macro-unit{font-size:10px;color:var(--text2)}
+        .macro-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-top:6px}
+        .macro-bar{height:100%;border-radius:3px;transition:width 1s ease}
+        .macro-percent{font-size:10px;color:var(--text2);text-align:right;margin-top:3px}
+        .water-card{background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)}
+        .water-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+        .water-drops{display:flex;gap:5px;flex-wrap:wrap}
+        .water-drop{font-size:22px;cursor:pointer;transition:transform 0.2s;filter:grayscale(1);opacity:0.4}
+        .water-drop.filled{filter:none;opacity:1;transform:scale(1.1)}
+        .water-info{font-size:12px;color:var(--text2);margin-top:6px}
+        .food-log{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+        .meal-section{border-bottom:1px solid var(--border)}
+        .meal-header{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;background:var(--card2)}
+        .meal-name{font-size:13px;font-weight:600}
+        .meal-cal{font-size:12px;color:var(--text2)}
+        .food-item{padding:10px 14px;display:flex;align-items:center;border-top:1px solid var(--border);animation:slideIn 0.3s ease;gap:8px}
+        @keyframes slideIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+        .food-item-info{flex:1;min-width:0}
+        .food-item-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .food-item-sub{font-size:11px;color:var(--text2);margin-top:2px}
+        .food-item-macros{font-size:10px;color:var(--text2);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap}
+        .food-item-cal{font-size:14px;font-weight:700;color:var(--primary);white-space:nowrap}
+        .food-actions{display:flex;gap:2px}
+        .action-btn{background:none;border:none;cursor:pointer;font-size:14px;padding:4px 5px;border-radius:6px;transition:all 0.2s;opacity:0.6}
+        .action-btn:hover{opacity:1;background:var(--card2)}
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--border);display:flex;padding:6px 0;z-index:100}
+        .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:6px;cursor:pointer}
+        .nav-icon{font-size:20px}
+        .nav-label{font-size:10px;color:var(--text2);margin-top:3px}
+        .nav-item.active .nav-label{color:var(--primary)}
+        .fab{flex:1;display:flex;justify-content:center;align-items:center}
+        .fab-btn{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));border:none;color:white;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;margin-top:-18px;box-shadow:0 4px 15px rgba(108,99,255,0.5);transition:all 0.3s}
+        .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;backdrop-filter:blur(4px)}
+        .modal-overlay.active{display:flex;align-items:flex-end}
+        .modal{background:var(--card);border-radius:24px 24px 0 0;padding:20px;width:100%;max-height:92vh;overflow-y:auto;animation:slideUp 0.3s ease;-webkit-overflow-scrolling:touch}
+        @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 16px}
+        .modal-title{font-size:18px;font-weight:800;margin-bottom:16px}
+        .food-search-wrap{position:relative;margin-bottom:8px}
+        .food-search-wrap input{width:100%;padding:13px 16px;background:var(--card2);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;outline:none}
+        .food-search-wrap input:focus{border-color:var(--primary)}
+        .food-suggestions{border-radius:12px;overflow:hidden;border:1px solid var(--border);background:var(--card2);margin-bottom:8px;max-height:240px;overflow-y:auto;display:none}
+        .suggestion-item{padding:11px 14px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);transition:background 0.15s}
+        .suggestion-item:last-child{border-bottom:none}
+        .suggestion-item:hover{background:var(--card)}
+        .sug-left{flex:1}
+        .sug-name{font-size:14px;font-weight:600}
+        .sug-macros{font-size:11px;color:var(--text2);margin-top:2px}
+        .sug-right{text-align:right;margin-left:10px}
+        .sug-cal{font-size:14px;font-weight:700;color:var(--primary)}
+        .sug-per{font-size:10px;color:var(--text2)}
+        .custom-badge{font-size:9px;background:rgba(108,99,255,0.2);color:var(--primary);padding:1px 5px;border-radius:5px;margin-left:4px}
+        .new-food-banner{background:rgba(67,217,173,0.08);border:1px solid rgba(67,217,173,0.4);border-radius:12px;padding:10px 14px;margin-bottom:10px;display:none;align-items:center;gap:8px;font-size:13px}
+        .new-badge{background:var(--success);color:#0F0F1A;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:800;white-space:nowrap}
+        .meal-select{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:12px 0}
+        .meal-btn{padding:9px 4px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text2);font-size:11px;cursor:pointer;text-align:center;transition:all 0.2s}
+        .meal-btn.active{background:rgba(108,99,255,0.15);border-color:var(--primary);color:var(--text)}
+        .meal-btn .m-icon{font-size:18px;display:block;margin-bottom:3px}
+        .portion-row{display:flex;gap:8px;margin-bottom:10px;align-items:flex-end}
+        .portion-qty{flex:0 0 90px}
+        .portion-unit{flex:1}
+        .mini-label{font-size:11px;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.5px;display:flex;align-items:center;gap:4px}
+        .mini-input{padding:11px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;width:100%;transition:border-color 0.2s}
+        .mini-input:focus{border-color:var(--primary)}
+        .mini-select{padding:11px 12px;background:var(--card2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14px;outline:none;width:100%;cursor:pointer}
+        .cal-preview{background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(255,101,132,0.08));border:1px solid rgba(108,99,255,0.3);border-radius:12px;padding:12px 16px;margin-bottom:12px;display:none}
+        .cal-preview-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .cal-preview-num{font-size:28px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .cal-preview-label{font-size:12px;color:var(--text2)}
+        .cal-preview-macros{display:flex;gap:12px}
+        .cpx{font-size:12px}
+        .macro-override-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+        .auto-badge{font-size:9px;background:rgba(67,217,173,0.2);color:var(--success);padding:1px 6px;border-radius:6px}
+        .mini-input.auto-filled{border-color:rgba(67,217,255,0.4);background:rgba(67,217,173,0.05)}
+        .camera-section{background:var(--card2);border:2px dashed var(--border);border-radius:12px;padding:20px;text-align:center;margin-bottom:12px;cursor:pointer;transition:all 0.3s}
+        #camera-preview{width:100%;border-radius:10px;margin-top:10px;display:none;max-height:180px;object-fit:cover}
+        .analyzing-loader{display:none;text-align:center;padding:14px}
+        .spinner{display:inline-block;width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .ai-result{background:rgba(108,99,255,0.08);border:1px solid var(--primary);border-radius:12px;padding:12px;margin-top:10px;display:none}
+        .ai-food-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(108,99,255,0.15);font-size:13px}
+        .ai-food-row:last-child{border-bottom:none}
+        .divider{display:flex;align-items:center;gap:10px;margin:12px 0;color:var(--text2);font-size:12px}
+        .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+        #stats-page{display:none;padding:16px;padding-bottom:80px;max-width:500px;margin:0 auto}
+        .weight-card,.bmi-card,.goal-progress,.streak-card{background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:14px}
+        .streak-card{background:linear-gradient(135deg,rgba(255,179,71,0.1),rgba(255,101,132,0.1));border-color:rgba(255,179,71,0.3);display:flex;align-items:center;gap:12px}
+        .bmi-bar{height:10px;border-radius:5px;background:linear-gradient(90deg,#43D9AD,#FFB347,#FF6B6B);position:relative;margin:10px 0 6px}
+        .bmi-indicator{position:absolute;top:-4px;width:18px;height:18px;background:white;border-radius:50%;border:3px solid var(--primary);transform:translateX(-50%);transition:left 1s ease}
+        .bmi-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--text2)}
+        .goal-progress-bar{height:8px;background:var(--border);border-radius:5px;overflow:hidden;margin:10px 0}
+        .goal-progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));border-radius:5px;transition:width 1s ease}
+        .mini-chart{height:60px;display:flex;align-items:flex-end;gap:4px}
+        .chart-bar{flex:1;background:linear-gradient(0deg,var(--primary),rgba(108,99,255,0.3));border-radius:4px 4px 0 0;min-height:4px}
+        .chart-labels{display:flex;gap:4px;padding:4px 0 0}
+        .chart-label{flex:1;text-align:center;font-size:9px;color:var(--text2)}
+        #profile-page{display:none;padding:16px;padding-bottom:80px;max-width:500px;margin:0 auto}
+        .profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px}
+        .info-card{background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);margin-bottom:14px}
+        .info-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)}
+        .info-row:last-child{border-bottom:none}
+        .info-key{color:var(--text2);font-size:13px}
+        .info-val{font-size:13px;font-weight:600}
+        #fooddb-page{display:none;padding:16px;padding-bottom:80px;max-width:500px;margin:0 auto}
+        .db-item{background:var(--card);border-radius:12px;padding:12px 14px;border:1px solid var(--border);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+        .db-item-info{flex:1;min-width:0}
+        .db-item-name{font-size:13px;font-weight:600}
+        .db-item-macros{font-size:11px;color:var(--text2);margin-top:2px}
+        .confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:2000;backdrop-filter:blur(4px);align-items:center;justify-content:center}
+        .confirm-overlay.active{display:flex}
+        .confirm-box{background:var(--card);border-radius:20px;padding:24px;max-width:300px;width:90%;border:1px solid var(--border);text-align:center}
+        .confirm-icon{font-size:44px;margin-bottom:10px}
+        .confirm-title{font-size:17px;font-weight:700;margin-bottom:6px}
+        .confirm-msg{font-size:13px;color:var(--text2);margin-bottom:18px;line-height:1.5}
+        .confirm-actions{display:flex;gap:8px}
+        .toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--success);color:#0F0F1A;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:all 0.3s;z-index:9999;white-space:nowrap;pointer-events:none}
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+        .toast.error{background:var(--danger);color:white}
+        .toast.warning{background:var(--warning);color:#0F0F1A}
+        .tips-card{background:linear-gradient(135deg,rgba(67,217,173,0.08),rgba(108,99,255,0.08));border:1px solid rgba(67,217,173,0.25);border-radius:12px;padding:14px;margin-bottom:14px}
+        .empty-state{padding:28px;text-align:center;color:var(--text2)}
+        .empty-icon{font-size:44px;margin-bottom:8px}
+        @media(min-width:768px){
+            #app,#setup,#stats-page,#profile-page,#fooddb-page{max-width:480px;margin:0 auto}
+            .modal-overlay.active{align-items:center}
+            .modal{border-radius:24px;max-width:480px;margin:0 auto;max-height:88vh}
+            .bottom-nav{max-width:480px;left:50%;transform:translateX(-50%)}
+        }
+
+        /* ===== PWA Install Banner ===== */
+        #pwa-banner {
+            display: none;
+            position: fixed;
+            bottom: 80px;
+            left: 16px; right: 16px;
+            background: var(--card);
+            border: 1px solid var(--primary);
+            border-radius: 16px;
+            padding: 14px 16px;
+            z-index: 500;
+            box-shadow: 0 8px 30px rgba(108,99,255,0.3);
+            animation: slideUp 0.4s ease;
+        }
+        #pwa-banner.show { display: flex; align-items: center; gap: 12px; }
+        .pwa-banner-icon { font-size: 36px; }
+        .pwa-banner-text { flex: 1; }
+        .pwa-banner-title { font-size: 14px; font-weight: 700; }
+        .pwa-banner-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        .pwa-banner-actions { display: flex; flex-direction: column; gap: 6px; }
+    </style>
+</head>
+<body>
+
+<!-- Splash -->
+<div id="splash">
+    <div class="splash-icon">🥗</div>
+    <div class="splash-title">CalTracker</div>
+    <div class="splash-sub">นับแคล ดูแลสุขภาพ ง่ายๆ</div>
+    <div class="splash-loader"><div class="splash-loader-bar"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- PWA Install Banner -->
+<div id="pwa-banner">
+    <div class="pwa-banner-icon">📲</div>
+    <div class="pwa-banner-text">
+        <div class="pwa-banner-title">ติดตั้ง CalTracker</div>
+        <div class="pwa-banner-sub">ใช้งานได้เหมือนแอพจริง ออฟไลน์ได้ด้วย!</div>
+    </div>
+    <div class="pwa-banner-actions">
+        <button class="btn btn-primary btn-sm" onclick="installApp()">ติดตั้ง</button>
+        <button class="btn btn-secondary btn-sm" onclick="dismissBanner()">ไม่เอา</button>
+    </div>
+</div>
+
+<!-- iOS Install Guide -->
+<div id="ios-guide" style="display:none;position:fixed;bottom:80px;left:16px;right:16px;background:var(--card);border:1px solid var(--primary);border-radius:16px;padding:16px;z-index:500;box-shadow:0 8px 30px rgba(108,99,255,0.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <div style="font-size:14px;font-weight:700">📱 ติดตั้งบน iPhone/iPad</div>
+        <button onclick="document.getElementById('ios-guide').style.display='none'" style="background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8">
+        1. กดปุ่ม <b style="color:var(--text)">Share</b> 📤 ด้านล่าง<br>
+        2. เลือก <b style="color:var(--text)">"Add to Home Screen"</b><br>
+        3. กด <b style="color:var(--text)">"Add"</b> มุมขวาบน<br>
+        4. แอพจะปรากฏบน Home Screen ✅
+    </div>
+</div>
+
+<!-- Confirm -->
+<div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-box">
+        <div class="confirm-icon">⚠️</div>
+        <div class="confirm-title" id="confirm-title">ยืนยัน</div>
+        <div class="confirm-msg" id="confirm-msg"></div>
+        <div class="confirm-actions">
+            <button class="btn btn-secondary btn-sm" style="flex:1" onclick="closeConfirm(false)">ยกเลิก</button>
+            <button class="btn btn-danger btn-sm" style="flex:1" onclick="closeConfirm(true)">ยืนยัน</button>
+        </div>
+    </div>
+</div>
+
+<!-- Setup -->
+<div id="setup">
+    <div class="setup-title">ยินดีต้อนรับ! 👋</div>
+    <div class="setup-sub">กรอกข้อมูลเพื่อเริ่มต้นใช้งาน</div>
+    <div class="form-group"><label class="form-label">ชื่อของคุณ</label><input type="text" class="form-input" id="name-input" placeholder="ชื่อ..."></div>
+    <div class="form-group">
+        <label class="form-label">เพศ</label>
+        <div class="goal-cards">
+            <div class="goal-card active" data-gender="male" onclick="selectGender(this)"><span class="icon">👨</span><div class="label">ชาย</div></div>
+            <div class="goal-card" data-gender="female" onclick="selectGender(this)"><span class="icon">👩</span><div class="label">หญิง</div></div>
+            <div class="goal-card" data-gender="other" onclick="selectGender(this)"><span class="icon">🧑</span><div class="label">อื่นๆ</div></div>
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group"><label class="form-label">อายุ</label><input type="number" class="form-input" id="age-input" placeholder="ปี"></div>
+        <div class="form-group"><label class="form-label">ส่วนสูง (cm)</label><input type="number" class="form-input" id="height-input" placeholder="cm"></div>
+    </div>
+    <div class="form-group"><label class="form-label">น้ำหนักปัจจุบัน (kg)</label><input type="number" class="form-input" id="weight-input" placeholder="kg"></div>
+    <div class="form-group"><label class="form-label">น้ำหนักเป้าหมาย (kg)</label><input type="number" class="form-input" id="goal-weight-input" placeholder="kg"></div>
+    <div class="form-group">
+        <label class="form-label">กิจกรรมประจำวัน</label>
+        <select class="form-select" id="activity-input">
+            <option value="1.2">นั่งทำงาน ไม่ค่อยขยับ</option>
+            <option value="1.375">ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์</option>
+            <option value="1.55" selected>ออกกำลังกายปานกลาง 3-5 วัน/สัปดาห์</option>
+            <option value="1.725">ออกกำลังกายหนัก 6-7 วัน/สัปดาห์</option>
+            <option value="1.9">นักกีฬา / งานใช้แรง</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label class="form-label">เป้าหมาย</label>
+        <div class="goal-cards">
+            <div class="goal-card active" data-goal="lose" onclick="selectGoal(this)"><span class="icon">⬇️</span><div class="label">ลดน้ำหนัก</div></div>
+            <div class="goal-card" data-goal="maintain" onclick="selectGoal(this)"><span class="icon">⚖️</span><div class="label">คงน้ำหนัก</div></div>
+            <div class="goal-card" data-goal="gain" onclick="selectGoal(this)"><span class="icon">⬆️</span><div class="label">เพิ่มน้ำหนัก</div></div>
+        </div>
+    </div>
+    <button class="btn btn-primary" onclick="saveSetup()">เริ่มต้นเลย 🚀</button>
+</div>
+
+<!-- App, Stats, Profile, FoodDB — เหมือนเดิมทุกอย่าง -->
+<div id="app">
+    <div class="header">
+        <div class="header-top">
+            <div>
+                <div class="header-greeting" id="greeting-text">สวัสดี!</div>
+                <div class="header-title" id="user-name-display">CalTracker</div>
+                <div class="header-date" id="date-display"></div>
+            </div>
+            <div style="display:flex;gap:6px">
+                <div class="icon-btn" onclick="showTab('fooddb')">🗂️</div>
+                <div class="icon-btn" onclick="showTab('profile')">⚙️</div>
+            </div>
+        </div>
+    </div>
+    <div id="home-tab">
+        <div class="calorie-section">
+            <div class="ring-container">
+                <svg class="ring-svg" width="180" height="180" viewBox="0 0 180 180">
+                    <circle class="ring-bg" cx="90" cy="90" r="78"/>
+                    <circle class="ring-progress" id="cal-ring" cx="90" cy="90" r="78" stroke="url(#rg)" stroke-dasharray="490" stroke-dashoffset="490"/>
+                    <defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:#6C63FF"/><stop offset="100%" style="stop-color:#FF6584"/></linearGradient></defs>
+                </svg>
+                <div class="ring-info">
+                    <div class="ring-cal" id="ring-cal-display">0</div>
+                    <div class="ring-label">kcal วันนี้</div>
+                    <div class="ring-remaining" id="ring-remaining"></div>
+                </div>
+            </div>
+            <div class="calorie-stats">
+                <div class="cal-stat"><div class="cal-stat-value" style="color:var(--success)" id="stat-goal">0</div><div class="cal-stat-label">🎯 เป้าหมาย</div></div>
+                <div class="cal-stat"><div class="cal-stat-value" style="color:var(--warning)" id="stat-burned">0</div><div class="cal-stat-label">🔥 เผาผลาญ</div></div>
+                <div class="cal-stat"><div class="cal-stat-value" style="color:var(--danger)" id="stat-net">0</div><div class="cal-stat-label">⚡ สุทธิ</div></div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-title">⚡ สารอาหาร</div>
+            <div class="macro-grid">
+                <div class="macro-card"><div class="macro-header"><div class="macro-name"><div class="macro-dot" style="background:var(--protein)"></div>โปรตีน</div><div style="text-align:right"><div class="macro-value" id="macro-protein">0</div><div class="macro-unit" id="macro-protein-goal">/ -- g</div></div></div><div class="macro-bar-bg"><div class="macro-bar" id="bar-protein" style="width:0%;background:var(--protein)"></div></div><div class="macro-percent" id="pct-protein">0%</div></div>
+                <div class="macro-card"><div class="macro-header"><div class="macro-name"><div class="macro-dot" style="background:var(--carb)"></div>คาร์บ</div><div style="text-align:right"><div class="macro-value" id="macro-carb">0</div><div class="macro-unit" id="macro-carb-goal">/ -- g</div></div></div><div class="macro-bar-bg"><div class="macro-bar" id="bar-carb" style="width:0%;background:var(--carb)"></div></div><div class="macro-percent" id="pct-carb">0%</div></div>
+                <div class="macro-card"><div class="macro-header"><div class="macro-name"><div class="macro-dot" style="background:var(--fat)"></div>ไขมัน</div><div style="text-align:right"><div class="macro-value" id="macro-fat">0</div><div class="macro-unit" id="macro-fat-goal">/ -- g</div></div></div><div class="macro-bar-bg"><div class="macro-bar" id="bar-fat" style="width:0%;background:var(--fat)"></div></div><div class="macro-percent" id="pct-fat">0%</div></div>
+                <div class="macro-card"><div class="macro-header"><div class="macro-name"><div class="macro-dot" style="background:var(--sugar)"></div>น้ำตาล</div><div style="text-align:right"><div class="macro-value" id="macro-sugar">0</div><div class="macro-unit" id="macro-sugar-goal">/ -- g</div></div></div><div class="macro-bar-bg"><div class="macro-bar" id="bar-sugar" style="width:0%;background:var(--sugar)"></div></div><div class="macro-percent" id="pct-sugar">0%</div></div>
+            </div>
+        </div>
+        <div class="section">
+            <div class="section-title">💧 น้ำดื่ม</div>
+            <div class="water-card">
+                <div class="water-header"><div><span id="water-current" style="font-size:22px;font-weight:800;color:var(--water)">0</span><span style="color:var(--text2)"> / <span id="water-goal-display">8</span> แก้ว</span></div><div style="display:flex;gap:5px"><button class="icon-btn" onclick="changeWater(-1)" style="width:30px;height:30px;font-size:13px">➖</button><button class="icon-btn" onclick="changeWater(1)" style="width:30px;height:30px;font-size:13px">➕</button></div></div>
+                <div class="water-drops" id="water-drops"></div>
+                <div class="water-info" id="water-info">💧 ดื่มน้ำให้เพียงพอต่อวัน</div>
+            </div>
+        </div>
+        <div class="section"><div class="section-title">🍽️ รายการอาหารวันนี้</div><div class="food-log" id="food-log"></div></div>
+        <div class="section"><div class="tips-card"><div style="font-size:13px;font-weight:700;margin-bottom:6px">💡 เคล็ดลับ</div><div style="font-size:12px;color:var(--text2);line-height:1.6" id="health-tip">...</div></div></div>
+    </div>
+</div>
+
+<div id="stats-page">
+    <div style="font-size:20px;font-weight:800;margin-bottom:16px">📊 สถิติ</div>
+    <div class="streak-card"><div style="font-size:32px">🔥</div><div><div style="font-size:26px;font-weight:800;color:var(--warning)" id="streak-display">0</div><div style="font-size:11px;color:var(--text2)">วันติดต่อกัน</div></div></div>
+    <div class="weight-card">
+        <div class="section-title">⚖️ น้ำหนัก</div>
+        <div style="display:flex;align-items:baseline;gap:6px;margin:10px 0"><div style="font-size:44px;font-weight:800;background:linear-gradient(135deg,var(--primary),var(--secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent" id="stat-weight-display">--</div><div style="font-size:16px;color:var(--text2)">kg</div></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px">เป้า: <span id="stat-goal-weight" style="color:var(--success)">--</span> | ต้องลด: <span id="stat-diff" style="color:var(--warning)">--</span></div>
+        <div style="display:flex;gap:8px"><input type="number" class="mini-input" id="update-weight" placeholder="น้ำหนักใหม่ (kg)" style="flex:1"><button class="btn btn-primary btn-sm" onclick="updateWeight()">อัปเดต</button></div>
+    </div>
+    <div class="bmi-card">
+        <div class="section-title">📏 BMI</div>
+        <div style="font-size:44px;font-weight:800;margin:6px 0" id="bmi-value">--</div>
+        <div id="bmi-status" style="color:var(--text2);font-size:13px;margin-bottom:8px">--</div>
+        <div class="bmi-bar"><div class="bmi-indicator" id="bmi-indicator" style="left:20%"></div></div>
+        <div class="bmi-labels"><span>ผอม &lt;18.5</span><span>ปกติ</span><span>เกิน</span><span>อ้วน &gt;25</span></div>
+    </div>
+    <div class="goal-progress">
+        <div class="section-title">🎯 ความคืบหน้า</div>
+        <div class="goal-progress-bar"><div class="goal-progress-fill" id="goal-fill" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text2)"><span id="goal-start-weight">เริ่ม: --</span><span id="goal-progress-pct" style="color:var(--primary)">0%</span><span id="goal-target">เป้า: --</span></div>
+        <div style="margin-top:16px"><div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text2)">แคลรายสัปดาห์</div><div class="mini-chart" id="weekly-chart"></div><div class="chart-labels" id="weekly-labels"></div></div>
+    </div>
+</div>
+
+<div id="profile-page">
+    <div style="padding:10px 0 16px"><div class="profile-avatar">👤</div><div style="font-size:22px;font-weight:800;text-align:center;margin-bottom:3px" id="profile-name">--</div><div style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:20px" id="profile-sub">--</div></div>
+    <div class="info-card">
+        <div class="section-title">📋 ข้อมูลส่วนตัว</div>
+        <div class="info-row"><span class="info-key">อายุ</span><span class="info-val" id="p-age">--</span></div>
+        <div class="info-row"><span class="info-key">ส่วนสูง</span><span class="info-val" id="p-height">--</span></div>
+        <div class="info-row"><span class="info-key">น้ำหนัก</span><span class="info-val" id="p-weight">--</span></div>
+        <div class="info-row"><span class="info-key">น้ำหนักเป้าหมาย</span><span class="info-val" id="p-goal-weight">--</span></div>
+        <div class="info-row"><span class="info-key">กิจกรรม</span><span class="info-val" id="p-activity">--</span></div>
+        <div class="info-row"><span class="info-key">เป้าหมาย</span><span class="info-val" id="p-goal">--</span></div>
+    </div>
+    <div class="info-card">
+        <div class="section-title">🔥 แคลเป้าหมาย/วัน</div>
+        <div class="info-row"><span class="info-key">BMR</span><span class="info-val" id="p-bmr">--</span></div>
+        <div class="info-row"><span class="info-key">TDEE</span><span class="info-val" id="p-tdee">--</span></div>
+        <div class="info-row"><span class="info-key">เป้าหมาย</span><span class="info-val" id="p-cal-goal" style="color:var(--primary)">--</span></div>
+    </div>
+    <button class="btn btn-danger" onclick="resetApp()">🗑️ รีเซ็ตข้อมูลทั้งหมด</button>
+</div>
+
+<div id="fooddb-page">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><div><div style="font-size:20px;font-weight:800">🗂️ คลังอาหาร</div><div style="font-size:12px;color:var(--text2);margin-top:3px" id="db-count">0 เมนู</div></div><button class="btn btn-primary btn-sm" onclick="openAddFoodToDB()">+ เพิ่ม</button></div>
+    <input type="text" class="mini-input" id="db-search" placeholder="🔍 ค้นหา..." oninput="renderFoodDB(this.value)" style="width:100%;margin-bottom:12px">
+    <div id="fooddb-list"></div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bottom-nav" id="bottom-nav" style="display:none">
+    <div class="nav-item active" id="nav-home" onclick="showTab('home')"><div class="nav-icon">🏠</div><div class="nav-label">หน้าหลัก</div></div>
+    <div class="nav-item" id="nav-stats" onclick="showTab('stats')"><div class="nav-icon">📊</div><div class="nav-label">สถิติ</div></div>
+    <div class="fab"><button class="fab-btn" onclick="openAddFood()">＋</button></div>
+    <div class="nav-item" id="nav-fooddb" onclick="showTab('fooddb')"><div class="nav-icon">🗂️</div><div class="nav-label">คลังอาหาร</div></div>
+    <div class="nav-item" id="nav-profile" onclick="showTab('profile')"><div class="nav-icon">👤</div><div class="nav-label">โปรไฟล์</div></div>
+</div>
+
+<!-- Modals (เหมือนเดิมทุกอย่าง) -->
+<div class="modal-overlay" id="add-food-modal">
+<div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">➕ เพิ่มอาหาร</div>
+    <div class="camera-section" id="camera-trigger" onclick="triggerCamera()"><div style="font-size:32px;margin-bottom:6px">📷</div><div style="font-size:13px;color:var(--text2)">ถ่ายภาพอาหาร — AI วิเคราะห์แคลให้</div></div>
+    <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="analyzeImage(event)">
+    <img id="camera-preview" alt="preview">
+    <div class="analyzing-loader" id="analyzing-loader"><div class="spinner"></div><div style="margin-top:8px;font-size:12px;color:var(--text2)">กำลังวิเคราะห์...</div></div>
+    <div class="ai-result" id="ai-result"><div style="font-size:12px;color:var(--primary);font-weight:600;margin-bottom:8px">🤖 ผลการวิเคราะห์ AI</div><div id="ai-result-content"></div><button class="btn btn-primary btn-sm" style="margin-top:10px;width:100%" onclick="useAIResult()">ใช้ข้อมูลนี้ ✓</button></div>
+    <button class="btn btn-secondary" id="analyze-btn" onclick="analyzeImageAction()" style="display:none;margin-bottom:10px">🔍 วิเคราะห์อาหาร</button>
+    <div class="divider">ค้นหาหรือกรอกเอง</div>
+    <div class="food-search-wrap"><input type="text" id="food-search" placeholder="🔍 ค้นหาอาหาร..." oninput="searchFood(this.value)" autocomplete="off"></div>
+    <div class="food-suggestions" id="food-suggestions"></div>
+    <div class="new-food-banner" id="new-food-banner"><span class="new-badge">✨ ใหม่</span><span id="new-food-text">จะบันทึกเมนูนี้เข้าคลังอัตโนมัติ</span></div>
+    <div class="meal-select">
+        <div class="meal-btn active" data-meal="breakfast" onclick="selectMeal(this)"><span class="m-icon">🌅</span>เช้า</div>
+        <div class="meal-btn" data-meal="lunch" onclick="selectMeal(this)"><span class="m-icon">☀️</span>กลางวัน</div>
+        <div class="meal-btn" data-meal="dinner" onclick="selectMeal(this)"><span class="m-icon">🌙</span>เย็น</div>
+        <div class="meal-btn" data-meal="snack" onclick="selectMeal(this)"><span class="m-icon">🍎</span>ของว่าง</div>
+    </div>
+    <div style="margin-bottom:10px"><div class="mini-label">🍽️ ชื่ออาหาร *</div><input type="text" class="mini-input" id="food-name-input" placeholder="เช่น ข้าวผัดกุ้ง..." style="width:100%" oninput="onNameInput(this.value)"></div>
+    <div style="margin-bottom:10px"><div class="mini-label">⚖️ ปริมาณที่กิน</div>
+        <div class="portion-row">
+            <div class="portion-qty"><input type="number" class="mini-input" id="qty-input" placeholder="1" value="1" min="0.1" step="0.1" oninput="recalcCalories()"></div>
+            <div class="portion-unit">
+                <select class="mini-select" id="unit-select" onchange="onUnitChange(this.value)">
+                    <optgroup label="🍽️ ภาชนะ/ชิ้น"><option value="serving">จาน/ที่</option><option value="bowl">ชาม</option><option value="cup">ถ้วย/แก้ว</option><option value="piece">ชิ้น</option><option value="scoop">สกูป/ทัพพี</option><option value="pack">ห่อ/ซอง</option><option value="can">กระป๋อง</option><option value="bottle">ขวด</option><option value="slice">แผ่น</option><option value="stick">แท่ง</option><option value="egg">ฟอง</option><option value="bunch">พวง/กำ</option></optgroup>
+                    <optgroup label="⚖️ น้ำหนัก/ปริมาตร"><option value="g">กรัม (g)</option><option value="ml">มิลลิลิตร (ml)</option><option value="kg">กิโลกรัม (kg)</option><option value="tbsp">ช้อนโต๊ะ</option><option value="tsp">ช้อนชา</option></optgroup>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="cal-preview" id="cal-preview">
+        <div class="cal-preview-top"><div><div class="cal-preview-num" id="preview-cal">0</div><div class="cal-preview-label">kcal ที่จะได้รับ</div></div><div style="text-align:right;font-size:12px;color:var(--text2)" id="preview-portion-text"></div></div>
+        <div class="cal-preview-macros"><div class="cpx" style="color:var(--protein)">P: <b id="preview-protein">0</b>g</div><div class="cpx" style="color:var(--carb)">C: <b id="preview-carb">0</b>g</div><div class="cpx" style="color:var(--fat)">F: <b id="preview-fat">0</b>g</div><div class="cpx" style="color:var(--sugar)">S: <b id="preview-sugar">0</b>g</div></div>
+        <div class="macro-override-row">
+            <div><div class="mini-label">💪 โปรตีน (g) <span class="auto-badge">อัตโนมัติ</span></div><input type="number" class="mini-input auto-filled" id="protein-input" placeholder="0" oninput="onManualMacro()"></div>
+            <div><div class="mini-label">🌾 คาร์บ (g) <span class="auto-badge">อัตโนมัติ</span></div><input type="number" class="mini-input auto-filled" id="carb-input" placeholder="0" oninput="onManualMacro()"></div>
+            <div><div class="mini-label">🧈 ไขมัน (g) <span class="auto-badge">อัตโนมัติ</span></div><input type="number" class="mini-input auto-filled" id="fat-input" placeholder="0" oninput="onManualMacro()"></div>
+            <div><div class="mini-label">🍬 น้ำตาล (g) <span class="auto-badge">อัตโนมัติ</span></div><input type="number" class="mini-input auto-filled" id="sugar-input" placeholder="0" oninput="onManualMacro()"></div>
+        </div>
+    </div>
+    <div id="manual-cal-row" style="display:none;margin-bottom:10px"><div class="mini-label">🔥 แคลอรี่ต่อหน่วย (kcal) *</div><input type="number" class="mini-input" id="base-cal-input" placeholder="เช่น 350 kcal ต่อ 1 จาน" style="width:100%" oninput="onBaseCalInput(this.value)"><div style="font-size:11px;color:var(--text2);margin-top:4px">💡 กรอกแคลสำหรับ 1 <span id="unit-hint">จาน</span></div></div>
+    <button class="btn btn-primary" style="margin-top:4px" onclick="addFood()">เพิ่มอาหาร ✓</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="closeModal('add-food-modal')">ยกเลิก</button>
+</div>
+</div>
+
+<div class="modal-overlay" id="edit-modal">
+<div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">✏️ แก้ไขรายการ</div>
+    <input type="hidden" id="edit-index">
+    <div class="meal-select" id="edit-meal-select">
+        <div class="meal-btn active" data-meal="breakfast" onclick="selectEditMeal(this)"><span class="m-icon">🌅</span>เช้า</div>
+        <div class="meal-btn" data-meal="lunch" onclick="selectEditMeal(this)"><span class="m-icon">☀️</span>กลางวัน</div>
+        <div class="meal-btn" data-meal="dinner" onclick="selectEditMeal(this)"><span class="m-icon">🌙</span>เย็น</div>
+        <div class="meal-btn" data-meal="snack" onclick="selectEditMeal(this)"><span class="m-icon">🍎</span>ของว่าง</div>
+    </div>
+    <div style="margin-bottom:10px"><div class="mini-label">🍽️ ชื่ออาหาร</div><input type="text" class="mini-input" id="edit-name" style="width:100%"></div>
+    <div style="margin-bottom:10px"><div class="mini-label">⚖️ ปริมาณ</div>
+        <div class="portion-row">
+            <div class="portion-qty"><input type="number" class="mini-input" id="edit-qty" value="1" min="0.1" step="0.1"></div>
+            <div class="portion-unit"><select class="mini-select" id="edit-unit-select"><optgroup label="🍽️ ภาชนะ/ชิ้น"><option value="serving">จาน/ที่</option><option value="bowl">ชาม</option><option value="cup">ถ้วย/แก้ว</option><option value="piece">ชิ้น</option><option value="scoop">สกูป</option><option value="pack">ห่อ/ซอง</option><option value="egg">ฟอง</option><option value="slice">แผ่น</option><option value="stick">แท่ง</option></optgroup><optgroup label="⚖️ น้ำหนัก"><option value="g">กรัม (g)</option><option value="ml">มล. (ml)</option><option value="tbsp">ช้อนโต๊ะ</option><option value="tsp">ช้อนชา</option></optgroup></select></div>
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div><div class="mini-label">🔥 แคล (kcal)</div><input type="number" class="mini-input" id="edit-cal"></div>
+        <div><div class="mini-label">💪 โปรตีน (g)</div><input type="number" class="mini-input" id="edit-protein"></div>
+        <div><div class="mini-label">🌾 คาร์บ (g)</div><input type="number" class="mini-input" id="edit-carb"></div>
+        <div><div class="mini-label">🧈 ไขมัน (g)</div><input type="number" class="mini-input" id="edit-fat"></div>
+        <div><div class="mini-label">🍬 น้ำตาล (g)</div><input type="number" class="mini-input" id="edit-sugar"></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveEditFood()">บันทึก ✓</button>
+    <button class="btn btn-danger" style="margin-top:8px" onclick="confirmDeleteFood()">🗑️ ลบรายการนี้</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="closeModal('edit-modal')">ยกเลิก</button>
+</div>
+</div>
+
+<div class="modal-overlay" id="adddb-modal">
+<div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="adddb-title">🗂️ เพิ่มเมนูใหม่</div>
+    <div style="margin-bottom:10px"><div class="mini-label">🍽️ ชื่อเมนู *</div><input type="text" class="mini-input" id="db-food-name" placeholder="ชื่ออาหาร..." style="width:100%"></div>
+    <div style="margin-bottom:10px"><div class="mini-label">📏 หน่วยอ้างอิง</div>
+        <div class="portion-row">
+            <div class="portion-qty"><input type="number" class="mini-input" id="db-ref-qty" value="1"></div>
+            <div class="portion-unit"><select class="mini-select" id="db-ref-unit"><optgroup label="🍽️ ภาชนะ/ชิ้น"><option value="serving">จาน/ที่</option><option value="bowl">ชาม</option><option value="cup">ถ้วย/แก้ว</option><option value="piece">ชิ้น</option><option value="scoop">สกูป</option><option value="pack">ห่อ/ซอง</option><option value="egg">ฟอง</option><option value="slice">แผ่น</option><option value="stick">แท่ง</option></optgroup><optgroup label="⚖️ น้ำหนัก"><option value="g">กรัม (g)</option><option value="ml">มล. (ml)</option><option value="tbsp">ช้อนโต๊ะ</option><option value="tsp">ช้อนชา</option></optgroup></select></div>
+        </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div><div class="mini-label">🔥 แคล *</div><input type="number" class="mini-input" id="db-cal" placeholder="0" oninput="autoCalcDBMacros(this.value)"></div>
+        <div><div class="mini-label">💪 โปรตีน</div><input type="number" class="mini-input" id="db-protein" placeholder="0"></div>
+        <div><div class="mini-label">🌾 คาร์บ</div><input type="number" class="mini-input" id="db-carb" placeholder="0"></div>
+        <div><div class="mini-label">🧈 ไขมัน</div><input type="number" class="mini-input" id="db-fat" placeholder="0"></div>
+        <div><div class="mini-label">🍬 น้ำตาล</div><input type="number" class="mini-input" id="db-sugar" placeholder="0"></div>
+    </div>
+    <button class="btn btn-primary" id="save-db-btn" onclick="saveFoodToDB()">บันทึก ✓</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="closeModal('adddb-modal')">ยกเลิก</button>
+</div>
+</div>
+
+<script>
+// ============================================================
+// PWA Setup (ไม่ต้องไฟล์แยก — ทุกอย่างอยู่ในไฟล์เดียว)
+// ============================================================
+let deferredPrompt = null;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+// Register Inline Service Worker
+const swCode = `
+const CACHE = 'caltracker-v2';
+self.addEventListener('install', e => {
+    self.skipWaiting();
+});
+self.addEventListener('activate', e => {
+    e.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+    );
+});
+self.addEventListener('fetch', e => {
+    if (e.request.method !== 'GET') return;
+    e.respondWith(
+        caches.open(CACHE).then(async cache => {
+            const cached = await cache.match(e.request);
+            const fetchPromise = fetch(e.request).then(res => {
+                if (res && res.status === 200) cache.put(e.request, res.clone());
+                return res;
+            }).catch(() => cached);
+            return cached || fetchPromise;
+        })
+    );
+});
+`;
+
+if ('serviceWorker' in navigator) {
+    const blob = new Blob([swCode], { type: 'application/javascript' });
+    const swURL = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swURL)
+        .then(reg => {
+            console.log('[PWA] SW registered');
+            reg.addEventListener('updatefound', () => {
+                reg.installing?.addEventListener('statechange', function() {
+                    if (this.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdateBar();
+                    }
+                });
+            });
+        })
+        .catch(e => console.log('[PWA] SW Error:', e));
+}
+
+function showUpdateBar() {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#6C63FF,#FF6584);color:white;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600';
+    bar.innerHTML = '<span>🔄 มีเวอร์ชันใหม่!</span><button onclick="location.reload()" style="background:white;color:#6C63FF;border:none;padding:5px 12px;border-radius:20px;font-weight:700;cursor:pointer;font-size:12px">อัปเดต</button>';
+    document.body.prepend(bar);
+}
+
+// Install prompt
+window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (!isInStandaloneMode && !localStorage.getItem('pwa-dismissed')) {
+        setTimeout(() => document.getElementById('pwa-banner').classList.add('show'), 3000);
+    }
+});
+
+window.addEventListener('appinstalled', () => {
+    showToast('🎉 ติดตั้ง CalTracker สำเร็จ!');
+    document.getElementById('pwa-banner').classList.remove('show');
+    deferredPrompt = null;
+});
+
+async function installApp() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        document.getElementById('pwa-banner').classList.remove('show');
+    }
+    deferredPrompt = null;
+}
+
+function dismissBanner() {
+    document.getElementById('pwa-banner').classList.remove('show');
+    localStorage.setItem('pwa-dismissed', '1');
+}
+
+// iOS Guide
+function showIOSGuide() {
+    if (isIOS && !isInStandaloneMode) {
+        setTimeout(() => {
+            if (!localStorage.getItem('ios-guide-shown')) {
+                document.getElementById('ios-guide').style.display = 'block';
+                localStorage.setItem('ios-guide-shown', '1');
+            }
+        }, 4000);
+    }
+}
+
+// ============================================================
+// ส่วน Logic เหมือนเดิมทั้งหมด (คัดลอกจาก version ก่อน)
+// ============================================================
+const UNIT_LABELS = {
+    serving:'จาน/ที่',bowl:'ชาม',cup:'ถ้วย/แก้ว',piece:'ชิ้น',
+    scoop:'สกูป/ทัพพี',pack:'ห่อ/ซอง',can:'กระป๋อง',bottle:'ขวด',
+    slice:'แผ่น',stick:'แท่ง',egg:'ฟอง',bunch:'พวง/กำ',
+    g:'กรัม',ml:'มล.',kg:'กก.',tbsp:'ช้อนโต๊ะ',tsp:'ช้อนชา'
+};
+const UNIT_MULTIPLIERS = {serving:1,bowl:1.5,cup:0.8,piece:1,scoop:0.4,pack:1,can:1,bottle:1,slice:0.3,stick:0.5,egg:1,bunch:0.6,tbsp:0.1,tsp:0.033};
+const UNIT_WEIGHT_G = {serving:null,bowl:null,cup:null,piece:null,scoop:null,pack:null,can:null,bottle:null,slice:null,stick:null,egg:null,bunch:null,g:1,ml:1,kg:1000,tbsp:15,tsp:5};
+function getUnitLabel(u){return UNIT_LABELS[u]||u;}
+
+let userData=null,todayLog=[],waterCount=0,selectedMeal='breakfast',editMeal='breakfast';
+let aiResultData=null,streak=0,confirmCallback=null,editingDBIndex=null;
+let currentFoodBase=null,manualMacroOverride=false;
+
+const defaultFoodDB=[
+    {name:'ข้าวสวย',cal:80,protein:1.5,carb:17,fat:0.2,sugar:0,refQty:1,refUnit:'scoop'},
+    {name:'ข้าวผัดกุ้ง',cal:320,protein:15,carb:40,fat:10,sugar:2,refQty:1,refUnit:'serving'},
+    {name:'ผัดไทยกุ้งสด',cal:380,protein:18,carb:45,fat:12,sugar:8,refQty:1,refUnit:'serving'},
+    {name:'ต้มยำกุ้ง',cal:150,protein:20,carb:8,fat:5,sugar:3,refQty:1,refUnit:'bowl'},
+    {name:'ส้มตำไทย',cal:90,protein:3,carb:15,fat:2,sugar:8,refQty:1,refUnit:'serving'},
+    {name:'ไก่ย่าง',cal:200,protein:30,carb:0,fat:8,sugar:0,refQty:1,refUnit:'piece'},
+    {name:'แกงเขียวหวานไก่',cal:280,protein:22,carb:12,fat:16,sugar:4,refQty:1,refUnit:'bowl'},
+    {name:'ข้าวมันไก่',cal:450,protein:28,carb:55,fat:12,sugar:2,refQty:1,refUnit:'serving'},
+    {name:'ผักบุ้งไฟแดง',cal:120,protein:4,carb:8,fat:8,sugar:2,refQty:1,refUnit:'serving'},
+    {name:'ไข่ดาว',cal:110,protein:7,carb:0,fat:8.5,sugar:0,refQty:1,refUnit:'egg'},
+    {name:'ไข่ต้ม',cal:70,protein:6,carb:0,fat:5,sugar:0,refQty:1,refUnit:'egg'},
+    {name:'นมวัว',cal:120,protein:6,carb:9,fat:7,sugar:9,refQty:1,refUnit:'cup'},
+    {name:'กล้วยหอม',cal:90,protein:1,carb:23,fat:0,sugar:12,refQty:1,refUnit:'piece'},
+    {name:'แอปเปิ้ล',cal:80,protein:0.4,carb:21,fat:0,sugar:15,refQty:1,refUnit:'piece'},
+    {name:'อกไก่ต้ม',cal:165,protein:31,carb:0,fat:3.6,sugar:0,refQty:100,refUnit:'g'},
+    {name:'ปลาทูนึ่ง',cal:160,protein:28,carb:0,fat:5,sugar:0,refQty:1,refUnit:'piece'},
+    {name:'โยเกิร์ต',cal:90,protein:9,carb:12,fat:0.5,sugar:10,refQty:1,refUnit:'cup'},
+    {name:'ข้าวโอ๊ต',cal:150,protein:5,carb:27,fat:3,sugar:1,refQty:1,refUnit:'cup'},
+    {name:'ขนมปัง',cal:70,protein:3,carb:13,fat:1,sugar:2,refQty:1,refUnit:'slice'},
+    {name:'บะหมี่กึ่งสำเร็จรูป',cal:350,protein:8,carb:52,fat:13,sugar:2,refQty:1,refUnit:'pack'},
+    {name:'ชาเขียวเย็น',cal:120,protein:0,carb:30,fat:0,sugar:28,refQty:1,refUnit:'cup'},
+    {name:'กาแฟดำ',cal:2,protein:0,carb:0,fat:0,sugar:0,refQty:1,refUnit:'cup'},
+    {name:'แฮมเบอร์เกอร์',cal:490,protein:25,carb:45,fat:25,sugar:8,refQty:1,refUnit:'piece'},
+    {name:'สลัดผัก',cal:30,protein:2,carb:5,fat:0.5,sugar:3,refQty:1,refUnit:'serving'},
+    {name:'ก๋วยเตี๋ยวน้ำ',cal:300,protein:18,carb:45,fat:5,sugar:3,refQty:1,refUnit:'bowl'},
+    {name:'ราเมน',cal:450,protein:20,carb:60,fat:14,sugar:6,refQty:1,refUnit:'bowl'},
+    {name:'ไอศกรีม',cal:140,protein:2,carb:17,fat:7,sugar:14,refQty:1,refUnit:'scoop'},
+    {name:'เค้ก',cal:350,protein:4,carb:52,fat:14,sugar:38,refQty:1,refUnit:'piece'},
+    {name:'ข้าวเหนียวมะม่วง',cal:430,protein:5,carb:80,fat:12,sugar:35,refQty:1,refUnit:'serving'},
+    {name:'โจ๊ก',cal:180,protein:8,carb:30,fat:3,sugar:1,refQty:1,refUnit:'bowl'},
+];
+
+function getFoodDB(){const c=getCustomFoods();const cn=c.map(f=>f.name.toLowerCase());return[...defaultFoodDB.filter(f=>!cn.includes(f.name.toLowerCase())),...c.map(f=>({...f,isCustom:true}))];}
+function getCustomFoods(){return JSON.parse(localStorage.getItem('caltracker_custom_foods')||'[]');}
+function saveCustomFoods(arr){localStorage.setItem('caltracker_custom_foods',JSON.stringify(arr));}
+function autoCalcMacros(cal){if(!cal||cal<=0)return{protein:0,carb:0,fat:0,sugar:0};return{protein:Math.round((cal*0.20)/4),carb:Math.round((cal*0.50)/4),fat:Math.round((cal*0.30)/9),sugar:Math.round((cal*0.05)/4)};}
+
+function calcCalFromPortion(base,qty,unit){
+    if(!base||!qty)return null;
+    let ratio=1;
+    const refIsW=UNIT_WEIGHT_G[base.refUnit]!==null&&UNIT_WEIGHT_G[base.refUnit]!==undefined;
+    const unitIsW=UNIT_WEIGHT_G[unit]!==null&&UNIT_WEIGHT_G[unit]!==undefined;
+    if(refIsW&&unitIsW){const rg=base.refQty*UNIT_WEIGHT_G[base.refUnit];const qg=qty*UNIT_WEIGHT_G[unit];ratio=qg/rg;}
+    else if(!refIsW&&!unitIsW){const mr=UNIT_MULTIPLIERS[base.refUnit]||1;const mu=UNIT_MULTIPLIERS[unit]||1;ratio=(qty*mu)/(base.refQty*mr);}
+    else if(refIsW&&!unitIsW){const rg=base.refQty*UNIT_WEIGHT_G[base.refUnit];const mu=UNIT_MULTIPLIERS[unit]||1;ratio=(qty*mu*200)/rg;}
+    else{const mr=UNIT_MULTIPLIERS[base.refUnit]||1;ratio=(qty*UNIT_WEIGHT_G[unit])/(base.refQty*mr*150);}
+    return{cal:Math.round(base.calPerRef*ratio),protein:Math.round(base.proteinPerRef*ratio*10)/10,carb:Math.round(base.carbPerRef*ratio*10)/10,fat:Math.round(base.fatPerRef*ratio*10)/10,sugar:Math.round(base.sugarPerRef*ratio*10)/10};
+}
+
+window.onload=()=>{
+    setTimeout(()=>{
+        document.getElementById('splash').style.opacity='0';
+        setTimeout(()=>{
+            document.getElementById('splash').style.display='none';
+            userData=JSON.parse(localStorage.getItem('caltracker_user'));
+            if(userData)startApp(); else document.getElementById('setup').style.display='block';
+        },500);
+    },2200);
+    document.getElementById('date-display').textContent=new Date().toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    showIOSGuide();
+    // Handle URL action
+    if(new URLSearchParams(location.search).get('action')==='add'&&userData){
+        setTimeout(()=>openAddFood(),2500);
+    }
+};
+
+let selectedGender='male',selectedGoalType='lose';
+function selectGender(el){document.querySelectorAll('[data-gender]').forEach(e=>e.classList.remove('active'));el.classList.add('active');selectedGender=el.dataset.gender;}
+function selectGoal(el){document.querySelectorAll('[data-goal]').forEach(e=>e.classList.remove('active'));el.classList.add('active');selectedGoalType=el.dataset.goal;}
+
+function saveSetup(){
+    const name=document.getElementById('name-input').value.trim();
+    const age=parseFloat(document.getElementById('age-input').value);
+    const height=parseFloat(document.getElementById('height-input').value);
+    const weight=parseFloat(document.getElementById('weight-input').value);
+    const goalWeight=parseFloat(document.getElementById('goal-weight-input').value);
+    const activity=parseFloat(document.getElementById('activity-input').value);
+    if(!name||!age||!height||!weight||!goalWeight){showToast('❌ กรุณากรอกข้อมูลให้ครบ','error');return;}
+    let bmr=selectedGender==='male'?10*weight+6.25*height-5*age+5:10*weight+6.25*height-5*age-161;
+    const tdee=Math.round(bmr*activity);
+    let calGoal=selectedGoalType==='lose'?tdee-500:selectedGoalType==='gain'?tdee+300:tdee;
+    calGoal=Math.max(calGoal,1200);
+    const proteinGoal=Math.round(weight*1.8),fatGoal=Math.round((calGoal*0.25)/9);
+    const carbGoal=Math.round((calGoal-proteinGoal*4-fatGoal*9)/4),sugarGoal=Math.round(calGoal*0.05/4);
+    userData={name,age,height,weight,goalWeight,activity,gender:selectedGender,goal:selectedGoalType,bmr:Math.round(bmr),tdee,calGoal,proteinGoal,fatGoal,carbGoal,sugarGoal,waterGoal:8,startWeight:weight,createdAt:new Date().toISOString()};
+    localStorage.setItem('caltracker_user',JSON.stringify(userData));
+    document.getElementById('setup').style.display='none';
+    startApp();showToast('🎉 ยินดีต้อนรับ '+name+'!');
+}
+
+function startApp(){
+    document.getElementById('app').style.display='block';
+    document.getElementById('bottom-nav').style.display='flex';
+    const today=getTodayKey();
+    todayLog=JSON.parse(localStorage.getItem('caltracker_log_'+today)||'[]');
+    waterCount=parseInt(localStorage.getItem('caltracker_water_'+today))||0;
+    streak=parseInt(localStorage.getItem('caltracker_streak'))||1;
+    const lastDay=localStorage.getItem('caltracker_lastday');
+    if(lastDay!==today){localStorage.setItem('caltracker_lastday',today);streak=lastDay===getYesterdayKey()?streak+1:1;localStorage.setItem('caltracker_streak',streak);}
+    updateUI();setGreeting();document.getElementById('health-tip').textContent=getRandomTip();
+}
+function getTodayKey(){return new Date().toISOString().split('T')[0];}
+function getYesterdayKey(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
+function setGreeting(){const h=new Date().getHours();const g=h<12?'🌅 อรุณสวัสดิ์':h<17?'☀️ สวัสดีตอนบ่าย':h<21?'🌆 สวัสดีตอนเย็น':'🌙 สวัสดีตอนกลางคืน';document.getElementById('greeting-text').textContent=g;document.getElementById('user-name-display').textContent=userData.name+' 👋';}
+
+function updateUI(){
+    if(!userData)return;
+    const t=todayLog.reduce((a,i)=>({cal:a.cal+(i.cal||0),protein:a.protein+(i.protein||0),carb:a.carb+(i.carb||0),fat:a.fat+(i.fat||0),sugar:a.sugar+(i.sugar||0)}),{cal:0,protein:0,carb:0,fat:0,sugar:0});
+    const pct=Math.min(t.cal/userData.calGoal,1);
+    document.getElementById('cal-ring').style.strokeDashoffset=490-490*pct;
+    document.getElementById('ring-cal-display').textContent=Math.round(t.cal);
+    const rem=userData.calGoal-t.cal;
+    document.getElementById('ring-remaining').textContent=rem>0?`เหลือ ${Math.round(rem)}`:`เกิน ${Math.abs(Math.round(rem))}`;
+    document.getElementById('cal-ring').style.stroke=rem>=0?'url(#rg)':'var(--danger)';
+    document.getElementById('stat-goal').textContent=userData.calGoal;
+    document.getElementById('stat-burned').textContent=Math.round(userData.bmr/24*8);
+    document.getElementById('stat-net').textContent=Math.round(t.cal);
+    updateMacro('protein',t.protein,userData.proteinGoal);updateMacro('carb',t.carb,userData.carbGoal);updateMacro('fat',t.fat,userData.fatGoal);updateMacro('sugar',t.sugar,userData.sugarGoal);
+    renderWater();renderFoodLog();
+    localStorage.setItem('caltracker_log_'+getTodayKey(),JSON.stringify(todayLog));saveWeeklyData(t.cal);
+}
+function updateMacro(n,cur,goal){const pct=goal>0?Math.min((cur/goal)*100,100):0;document.getElementById('macro-'+n).textContent=Math.round(cur);document.getElementById('macro-'+n+'-goal').textContent='/ '+goal+'g';document.getElementById('bar-'+n).style.width=pct+'%';document.getElementById('pct-'+n).textContent=Math.round(pct)+'%';}
+
+function renderWater(){const goal=userData.waterGoal,drops=document.getElementById('water-drops');drops.innerHTML='';for(let i=0;i<goal;i++){const d=document.createElement('div');d.className='water-drop'+(i<waterCount?' filled':'');d.textContent='💧';d.onclick=()=>setWater(i+1);drops.appendChild(d);}document.getElementById('water-current').textContent=waterCount;document.getElementById('water-goal-display').textContent=goal;const ml=waterCount*250;document.getElementById('water-info').textContent=waterCount>=goal?`✅ ครบแล้ว! (${ml}ml)`:`💧 ${ml}ml (ขาด ${(goal-waterCount)*250}ml)`;}
+function changeWater(d){waterCount=Math.max(0,Math.min(waterCount+d,userData.waterGoal));localStorage.setItem('caltracker_water_'+getTodayKey(),waterCount);renderWater();if(waterCount===userData.waterGoal)showToast('💧 ดื่มน้ำครบแล้ว!');}
+function setWater(n){waterCount=n===waterCount?n-1:n;waterCount=Math.max(0,waterCount);localStorage.setItem('caltracker_water_'+getTodayKey(),waterCount);renderWater();}
+
+function renderFoodLog(){
+    const log=document.getElementById('food-log');
+    if(!todayLog.length){log.innerHTML=`<div class="empty-state"><div class="empty-icon">🥗</div><div>ยังไม่มีรายการ<br>กด <b>+</b> เพื่อเพิ่มอาหาร</div></div>`;return;}
+    const meals={breakfast:{name:'🌅 มื้อเช้า',items:[]},lunch:{name:'☀️ กลางวัน',items:[]},dinner:{name:'🌙 มื้อเย็น',items:[]},snack:{name:'🍎 ของว่าง',items:[]}};
+    todayLog.forEach((item,idx)=>{if(meals[item.meal])meals[item.meal].items.push({...item,idx});});
+    log.innerHTML='';
+    Object.entries(meals).forEach(([,meal])=>{
+        if(!meal.items.length)return;
+        const mCal=meal.items.reduce((a,b)=>a+(b.cal||0),0);
+        const sec=document.createElement('div');sec.className='meal-section';
+        sec.innerHTML=`<div class="meal-header"><div class="meal-name">${meal.name}</div><div class="meal-cal">${Math.round(mCal)} kcal</div></div>`;
+        meal.items.forEach(item=>{
+            const div=document.createElement('div');div.className='food-item';
+            const pt=item.qty&&item.unit?`${item.qty} ${getUnitLabel(item.unit)}`:'';
+            div.innerHTML=`<div class="food-item-info"><div class="food-item-name">${item.name}</div><div class="food-item-sub">${pt}</div><div class="food-item-macros"><span style="color:var(--protein)">P:${+(item.protein||0).toFixed(1)}g</span><span style="color:var(--carb)">C:${+(item.carb||0).toFixed(1)}g</span><span style="color:var(--fat)">F:${+(item.fat||0).toFixed(1)}g</span><span style="color:var(--sugar)">S:${+(item.sugar||0).toFixed(1)}g</span></div></div><div class="food-item-cal">${Math.round(item.cal)} kcal</div><div class="food-actions"><button class="action-btn" onclick="openEditFood(${item.idx})">✏️</button><button class="action-btn" onclick="quickDeleteFood(${item.idx})">🗑️</button></div>`;
+            sec.appendChild(div);
+        });
+        log.appendChild(sec);
+    });
+}
+
+function quickDeleteFood(idx){showConfirm('🗑️ ลบ',`ลบ "${todayLog[idx]?.name}"?`,()=>{todayLog.splice(idx,1);updateUI();showToast('🗑️ ลบแล้ว');});}
+function openEditFood(idx){const item=todayLog[idx];if(!item)return;document.getElementById('edit-index').value=idx;document.getElementById('edit-name').value=item.name;document.getElementById('edit-cal').value=item.cal;document.getElementById('edit-protein').value=item.protein||0;document.getElementById('edit-carb').value=item.carb||0;document.getElementById('edit-fat').value=item.fat||0;document.getElementById('edit-sugar').value=item.sugar||0;document.getElementById('edit-qty').value=item.qty||1;document.getElementById('edit-unit-select').value=item.unit||'serving';editMeal=item.meal||'breakfast';document.querySelectorAll('#edit-meal-select .meal-btn').forEach(b=>b.classList.toggle('active',b.dataset.meal===editMeal));document.getElementById('edit-modal').classList.add('active');}
+function selectEditMeal(el){document.querySelectorAll('#edit-meal-select .meal-btn').forEach(e=>e.classList.remove('active'));el.classList.add('active');editMeal=el.dataset.meal;}
+function saveEditFood(){const idx=parseInt(document.getElementById('edit-index').value);const name=document.getElementById('edit-name').value.trim();const cal=parseFloat(document.getElementById('edit-cal').value);if(!name||!cal){showToast('❌ กรุณากรอกชื่อและแคล','error');return;}todayLog[idx]={...todayLog[idx],name,cal,protein:parseFloat(document.getElementById('edit-protein').value)||0,carb:parseFloat(document.getElementById('edit-carb').value)||0,fat:parseFloat(document.getElementById('edit-fat').value)||0,sugar:parseFloat(document.getElementById('edit-sugar').value)||0,qty:parseFloat(document.getElementById('edit-qty').value)||1,unit:document.getElementById('edit-unit-select').value,meal:editMeal};updateUI();closeModal('edit-modal');showToast('✅ แก้ไขแล้ว');}
+function confirmDeleteFood(){const idx=parseInt(document.getElementById('edit-index').value);showConfirm('🗑️ ลบ',`ลบ "${todayLog[idx]?.name}"?`,()=>{todayLog.splice(idx,1);updateUI();closeModal('edit-modal');showToast('🗑️ ลบแล้ว');});}
+
+function openAddFood(){currentFoodBase=null;manualMacroOverride=false;document.getElementById('add-food-modal').classList.add('active');document.getElementById('food-search').value='';document.getElementById('food-name-input').value='';document.getElementById('food-suggestions').style.display='none';document.getElementById('food-suggestions').innerHTML='';document.getElementById('new-food-banner').style.display='none';document.getElementById('cal-preview').style.display='none';document.getElementById('manual-cal-row').style.display='none';document.getElementById('camera-preview').style.display='none';document.getElementById('camera-trigger').style.display='block';document.getElementById('analyze-btn').style.display='none';document.getElementById('ai-result').style.display='none';document.getElementById('analyzing-loader').style.display='none';document.getElementById('qty-input').value='1';document.getElementById('unit-select').value='serving';['protein-input','carb-input','fat-input','sugar-input'].forEach(id=>{const el=document.getElementById(id);el.value='';el.classList.remove('auto-filled');});}
+function selectMeal(el){document.querySelectorAll('#add-food-modal .meal-btn').forEach(e=>e.classList.remove('active'));el.classList.add('active');selectedMeal=el.dataset.meal;}
+
+function searchFood(query){
+    const sug=document.getElementById('food-suggestions'),banner=document.getElementById('new-food-banner');
+    if(!query.trim()){sug.style.display='none';banner.style.display='none';return;}
+    const db=getFoodDB(),results=db.filter(f=>f.name.toLowerCase().includes(query.toLowerCase())).slice(0,8);
+    if(results.length){
+        banner.style.display='none';sug.style.display='block';
+        sug.innerHTML=results.map(f=>`<div class="suggestion-item" onclick='selectFoodFromSearch(${JSON.stringify(f)})'><div class="sug-left"><div class="sug-name">${f.name}${f.isCustom?'<span class="custom-badge">ของคุณ</span>':''}</div><div class="sug-macros">P:${f.protein}g C:${f.carb}g F:${f.fat}g | ${f.refQty}${getUnitLabel(f.refUnit)}</div></div><div class="sug-right"><div class="sug-cal">${f.cal}</div><div class="sug-per">kcal/${f.refQty}${getUnitLabel(f.refUnit)}</div></div></div>`).join('');
+    }else{
+        sug.style.display='block';sug.innerHTML=`<div style="padding:10px 14px;color:var(--text2);font-size:13px;text-align:center">ไม่พบ "<b style="color:var(--text)">${query}</b>"</div>`;
+        document.getElementById('food-name-input').value=query;onNameInput(query);banner.style.display='flex';document.getElementById('new-food-text').textContent=`จะบันทึก "${query}" เข้าคลังอัตโนมัติ`;document.getElementById('manual-cal-row').style.display='block';
+    }
+}
+function selectFoodFromSearch(food){document.getElementById('food-suggestions').style.display='none';document.getElementById('food-search').value=food.name;document.getElementById('food-name-input').value=food.name;document.getElementById('new-food-banner').style.display='none';document.getElementById('manual-cal-row').style.display='none';currentFoodBase={calPerRef:food.cal,proteinPerRef:food.protein||0,carbPerRef:food.carb||0,fatPerRef:food.fat||0,sugarPerRef:food.sugar||0,refQty:food.refQty||1,refUnit:food.refUnit||'serving'};manualMacroOverride=false;document.getElementById('unit-select').value=food.refUnit||'serving';document.getElementById('qty-input').value=food.refQty||1;recalcCalories();}
+function onNameInput(val){if(!val)return;const db=getFoodDB();const match=db.find(f=>f.name.toLowerCase()===val.toLowerCase());if(match){selectFoodFromSearch(match);document.getElementById('food-search').value=val;}}
+function onUnitChange(unit){document.getElementById('unit-hint').textContent=getUnitLabel(unit);recalcCalories();}
+function recalcCalories(){const qty=parseFloat(document.getElementById('qty-input').value)||1;const unit=document.getElementById('unit-select').value;document.getElementById('unit-hint').textContent=getUnitLabel(unit);if(!currentFoodBase){const baseCal=parseFloat(document.getElementById('base-cal-input').value)||0;if(baseCal>0){const tempBase={calPerRef:baseCal,proteinPerRef:0,carbPerRef:0,fatPerRef:0,sugarPerRef:0,refQty:1,refUnit:unit};const res=calcCalFromPortion(tempBase,qty,unit);if(res)showCalPreview(res,qty,unit);}return;}const result=calcCalFromPortion(currentFoodBase,qty,unit);if(!result)return;if(!manualMacroOverride){document.getElementById('protein-input').value=result.protein;document.getElementById('carb-input').value=result.carb;document.getElementById('fat-input').value=result.fat;document.getElementById('sugar-input').value=result.sugar;['protein-input','carb-input','fat-input','sugar-input'].forEach(id=>document.getElementById(id).classList.add('auto-filled'));}showCalPreview(result,qty,unit);}
+function showCalPreview(result,qty,unit){document.getElementById('cal-preview').style.display='block';document.getElementById('preview-cal').textContent=Math.round(result.cal);document.getElementById('preview-protein').textContent=result.protein;document.getElementById('preview-carb').textContent=result.carb;document.getElementById('preview-fat').textContent=result.fat;document.getElementById('preview-sugar').textContent=result.sugar;document.getElementById('preview-portion-text').innerHTML=`${qty} ${getUnitLabel(unit)}`;}
+function onBaseCalInput(val){const cal=parseFloat(val)||0;if(cal>0){const unit=document.getElementById('unit-select').value;const m=autoCalcMacros(cal);currentFoodBase={calPerRef:cal,proteinPerRef:m.protein,carbPerRef:m.carb,fatPerRef:m.fat,sugarPerRef:m.sugar,refQty:1,refUnit:unit};manualMacroOverride=false;recalcCalories();}}
+function onManualMacro(){manualMacroOverride=true;}
+
+function addFood(){
+    const name=document.getElementById('food-name-input').value.trim();
+    if(!name){showToast('❌ กรุณากรอกชื่ออาหาร','error');return;}
+    const qty=parseFloat(document.getElementById('qty-input').value)||1;
+    const unit=document.getElementById('unit-select').value;
+    let cal,protein,carb,fat,sugar;
+    if(currentFoodBase){const res=calcCalFromPortion(currentFoodBase,qty,unit);if(!res||res.cal<=0){showToast('❌ ไม่สามารถคำนวณแคลได้','error');return;}cal=res.cal;const pEl=document.getElementById('protein-input'),cEl=document.getElementById('carb-input'),fEl=document.getElementById('fat-input'),sEl=document.getElementById('sugar-input');protein=pEl.value!==''?parseFloat(pEl.value):res.protein;carb=cEl.value!==''?parseFloat(cEl.value):res.carb;fat=fEl.value!==''?parseFloat(fEl.value):res.fat;sugar=sEl.value!==''?parseFloat(sEl.value):res.sugar;}
+    else{const baseCal=parseFloat(document.getElementById('base-cal-input').value)||0;if(!baseCal){showToast('❌ กรุณากรอกแคลอรี่','error');return;}cal=Math.round(baseCal*qty);const m=autoCalcMacros(cal);protein=parseFloat(document.getElementById('protein-input').value)||m.protein;carb=parseFloat(document.getElementById('carb-input').value)||m.carb;fat=parseFloat(document.getElementById('fat-input').value)||m.fat;sugar=parseFloat(document.getElementById('sugar-input').value)||m.sugar;}
+    todayLog.push({name,cal,protein,carb,fat,sugar,qty,unit,meal:selectedMeal,time:new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})});
+    const db=getFoodDB(),exists=db.some(f=>f.name.toLowerCase()===name.toLowerCase());
+    let savedNew=false;
+    if(!exists){const customs=getCustomFoods();const calPerServing=currentFoodBase?currentFoodBase.calPerRef:cal;const refUnit=currentFoodBase?currentFoodBase.refUnit:unit;const refQty=currentFoodBase?currentFoodBase.refQty:qty;const mAuto=autoCalcMacros(calPerServing);customs.push({name,cal:calPerServing,protein:currentFoodBase?currentFoodBase.proteinPerRef:mAuto.protein,carb:currentFoodBase?currentFoodBase.carbPerRef:mAuto.carb,fat:currentFoodBase?currentFoodBase.fatPerRef:mAuto.fat,sugar:currentFoodBase?currentFoodBase.sugarPerRef:mAuto.sugar,refQty,refUnit,isCustom:true});saveCustomFoods(customs);savedNew=true;}
+    updateUI();closeModal('add-food-modal');showToast(savedNew?`✅ เพิ่ม "${name}" และบันทึกเข้าคลัง 🗂️`:`✅ เพิ่ม "${name}" แล้ว`);
+}
+
+function triggerCamera(){document.getElementById('camera-input').click();}
+function analyzeImage(event){const file=event.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{document.getElementById('camera-preview').src=e.target.result;document.getElementById('camera-preview').style.display='block';document.getElementById('analyze-btn').style.display='block';document.getElementById('camera-trigger').style.display='none';};reader.readAsDataURL(file);}
+const aiSims=[[{name:'ข้าวสวย',cal:240,protein:4.5,carb:51,fat:0.6,sugar:0,refQty:1,refUnit:'bowl'},{name:'ไก่ย่าง',cal:200,protein:30,carb:0,fat:8,sugar:0,refQty:1,refUnit:'piece'}],[{name:'ผัดไทย',cal:380,protein:18,carb:45,fat:12,sugar:8,refQty:1,refUnit:'serving'}],[{name:'ส้มตำ',cal:90,protein:3,carb:15,fat:2,sugar:8,refQty:1,refUnit:'serving'},{name:'ข้าวเหนียว',cal:180,protein:3,carb:39,fat:0.5,sugar:0,refQty:1,refUnit:'scoop'}]];
+function analyzeImageAction(){document.getElementById('analyze-btn').style.display='none';document.getElementById('analyzing-loader').style.display='block';setTimeout(()=>{document.getElementById('analyzing-loader').style.display='none';const sim=aiSims[Math.floor(Math.random()*aiSims.length)];aiResultData=sim;const tCal=sim.reduce((a,b)=>a+b.cal,0);document.getElementById('ai-result-content').innerHTML=sim.map(i=>`<div class="ai-food-row"><span>${i.name} (${i.refQty}${getUnitLabel(i.refUnit)})</span><span style="color:var(--primary)">${i.cal} kcal</span></div>`).join('')+`<div class="ai-food-row" style="font-weight:700;margin-top:4px"><span>รวม</span><span style="color:var(--primary)">${tCal} kcal</span></div>`;document.getElementById('ai-result').style.display='block';showToast('🤖 วิเคราะห์เสร็จแล้ว!');},2000);}
+function useAIResult(){if(!aiResultData)return;const db=getFoodDB();aiResultData.forEach(item=>{todayLog.push({...item,meal:selectedMeal,time:new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})});if(!db.some(f=>f.name.toLowerCase()===item.name.toLowerCase())){const customs=getCustomFoods();customs.push({...item,isCustom:true});saveCustomFoods(customs);}});updateUI();closeModal('add-food-modal');showToast('✅ เพิ่มจาก AI แล้ว!');aiResultData=null;}
+
+function renderFoodDB(query=''){const db=getFoodDB();const filtered=query?db.filter(f=>f.name.toLowerCase().includes(query.toLowerCase())):db;document.getElementById('db-count').textContent=`รวม ${db.length} เมนู (ของคุณ: ${getCustomFoods().length})`;const list=document.getElementById('fooddb-list');if(!filtered.length){list.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><div>ไม่พบเมนู</div></div>`;return;}list.innerHTML=filtered.map(f=>`<div class="db-item"><div class="db-item-info"><div class="db-item-name">${f.name}${f.isCustom?'<span class="custom-badge">ของคุณ</span>':''}</div><div class="db-item-macros">${f.cal} kcal / ${f.refQty}${getUnitLabel(f.refUnit)} | P:${f.protein}g C:${f.carb}g F:${f.fat}g</div></div><div style="display:flex;gap:4px">${f.isCustom?`<button class="action-btn" onclick="openEditFoodInDB('${f.name}')">✏️</button><button class="action-btn" onclick="deleteFoodFromDB('${f.name}')">🗑️</button>`:`<button class="action-btn" onclick='quickAddFromDB(${JSON.stringify(f)})'>➕</button>`}</div></div>`).join('');}
+function quickAddFromDB(food){const res=calcCalFromPortion({calPerRef:food.cal,proteinPerRef:food.protein||0,carbPerRef:food.carb||0,fatPerRef:food.fat||0,sugarPerRef:food.sugar||0,refQty:food.refQty||1,refUnit:food.refUnit||'serving'},food.refQty||1,food.refUnit||'serving');todayLog.push({...food,...res,qty:food.refQty||1,unit:food.refUnit||'serving',meal:selectedMeal||'snack',time:new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})});updateUI();showToast(`✅ เพิ่ม "${food.name}" แล้ว`);}
+function openAddFoodToDB(){editingDBIndex=null;document.getElementById('adddb-title').textContent='🗂️ เพิ่มเมนูใหม่';document.getElementById('save-db-btn').textContent='บันทึกเมนู ✓';['db-food-name','db-cal','db-protein','db-carb','db-fat','db-sugar'].forEach(id=>document.getElementById(id).value='');document.getElementById('db-ref-qty').value=1;document.getElementById('db-ref-unit').value='serving';document.getElementById('adddb-modal').classList.add('active');}
+function openEditFoodInDB(name){const customs=getCustomFoods();const idx=customs.findIndex(f=>f.name===name);if(idx===-1)return;const f=customs[idx];editingDBIndex=idx;document.getElementById('adddb-title').textContent='✏️ แก้ไขเมนู';document.getElementById('save-db-btn').textContent='บันทึกการแก้ไข ✓';document.getElementById('db-food-name').value=f.name;document.getElementById('db-cal').value=f.cal;document.getElementById('db-protein').value=f.protein;document.getElementById('db-carb').value=f.carb;document.getElementById('db-fat').value=f.fat;document.getElementById('db-sugar').value=f.sugar;document.getElementById('db-ref-qty').value=f.refQty||1;document.getElementById('db-ref-unit').value=f.refUnit||'serving';document.getElementById('adddb-modal').classList.add('active');}
+function autoCalcDBMacros(val){const cal=parseFloat(val);if(!cal)return;const m=autoCalcMacros(cal);const p=document.getElementById('db-protein'),c=document.getElementById('db-carb'),f=document.getElementById('db-fat'),s=document.getElementById('db-sugar');if(!p.value)p.value=m.protein;if(!c.value)c.value=m.carb;if(!f.value)f.value=m.fat;if(!s.value)s.value=m.sugar;}
+function saveFoodToDB(){const name=document.getElementById('db-food-name').value.trim();const cal=parseFloat(document.getElementById('db-cal').value);if(!name){showToast('❌ กรุณากรอกชื่อ','error');return;}if(!cal){showToast('❌ กรุณากรอกแคล','error');return;}const m=autoCalcMacros(cal);const food={name,cal,protein:parseFloat(document.getElementById('db-protein').value)||m.protein,carb:parseFloat(document.getElementById('db-carb').value)||m.carb,fat:parseFloat(document.getElementById('db-fat').value)||m.fat,sugar:parseFloat(document.getElementById('db-sugar').value)||m.sugar,refQty:parseFloat(document.getElementById('db-ref-qty').value)||1,refUnit:document.getElementById('db-ref-unit').value,isCustom:true};const customs=getCustomFoods();if(editingDBIndex!==null){customs[editingDBIndex]=food;saveCustomFoods(customs);showToast(`✅ แก้ไข "${name}" แล้ว`);}else{const db=getFoodDB();if(db.some(f=>f.name.toLowerCase()===name.toLowerCase())){showToast('⚠️ มีเมนูนี้แล้ว','warning');return;}customs.push(food);saveCustomFoods(customs);showToast(`✅ เพิ่ม "${name}" เข้าคลัง 🗂️`);}closeModal('adddb-modal');renderFoodDB(document.getElementById('db-search').value);}
+function deleteFoodFromDB(name){showConfirm('🗑️ ลบเมนู',`ลบ "${name}" ออกจากคลัง?`,()=>{saveCustomFoods(getCustomFoods().filter(f=>f.name!==name));renderFoodDB(document.getElementById('db-search').value);showToast(`🗑️ ลบ "${name}" แล้ว`);});}
+
+function updateStatsPage(){if(!userData)return;document.getElementById('stat-weight-display').textContent=userData.weight;document.getElementById('stat-goal-weight').textContent=userData.goalWeight+' kg';document.getElementById('streak-display').textContent=streak;document.getElementById('stat-diff').textContent=Math.abs(userData.weight-userData.goalWeight).toFixed(1)+' kg';const bmi=(userData.weight/Math.pow(userData.height/100,2)).toFixed(1);let bs='',bc='',bp=0;if(bmi<18.5){bs='น้ำหนักน้อย';bc='var(--water)';bp=15;}else if(bmi<23){bs='ปกติ';bc='var(--success)';bp=37;}else if(bmi<25){bs='น้ำหนักเกิน';bc='var(--warning)';bp=65;}else{bs='อ้วน';bc='var(--danger)';bp=85;}document.getElementById('bmi-value').textContent=bmi;document.getElementById('bmi-value').style.color=bc;document.getElementById('bmi-status').textContent=bs;document.getElementById('bmi-indicator').style.left=bp+'%';const sw=userData.startWeight,gw=userData.goalWeight,cw=userData.weight;const pct=sw!==gw?Math.min(Math.max(((sw-cw)/(sw-gw))*100,0),100):0;document.getElementById('goal-fill').style.width=pct+'%';document.getElementById('goal-progress-pct').textContent=Math.round(pct)+'%';document.getElementById('goal-start-weight').textContent='เริ่ม: '+sw+' kg';document.getElementById('goal-target').textContent='เป้า: '+gw+' kg';renderWeeklyChart();}
+function updateWeight(){const w=parseFloat(document.getElementById('update-weight').value);if(!w||w<30||w>300){showToast('❌ น้ำหนักไม่ถูกต้อง','error');return;}userData.weight=w;let bmr=userData.gender==='male'?10*w+6.25*userData.height-5*userData.age+5:10*w+6.25*userData.height-5*userData.age-161;userData.bmr=Math.round(bmr);userData.tdee=Math.round(bmr*userData.activity);localStorage.setItem('caltracker_user',JSON.stringify(userData));updateStatsPage();document.getElementById('update-weight').value='';showToast('✅ อัปเดตน้ำหนัก '+w+' kg');}
+function saveWeeklyData(cal){const today=getTodayKey();const weekly=JSON.parse(localStorage.getItem('caltracker_weekly')||'{}');weekly[today]=cal;const keys=Object.keys(weekly).sort();if(keys.length>7)delete weekly[keys[0]];localStorage.setItem('caltracker_weekly',JSON.stringify(weekly));}
+function renderWeeklyChart(){const weekly=JSON.parse(localStorage.getItem('caltracker_weekly')||'{}');const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().split('T')[0]);}const mx=Math.max(...days.map(d=>weekly[d]||0),userData?.calGoal||2000);const dn=['อา','จ','อ','พ','พฤ','ศ','ส'];document.getElementById('weekly-chart').innerHTML=days.map(d=>`<div class="chart-bar" style="height:${Math.max((weekly[d]||0)/mx*100,4)}%"></div>`).join('');document.getElementById('weekly-labels').innerHTML=days.map(d=>`<div class="chart-label">${dn[new Date(d).getDay()]}</div>`).join('');}
+function updateProfilePage(){if(!userData)return;document.getElementById('profile-name').textContent=userData.name;document.getElementById('profile-sub').textContent=(userData.gender==='male'?'👨 ชาย':userData.gender==='female'?'👩 หญิง':'🧑 อื่นๆ')+' | อายุ '+userData.age+' ปี';document.getElementById('p-age').textContent=userData.age+' ปี';document.getElementById('p-height').textContent=userData.height+' cm';document.getElementById('p-weight').textContent=userData.weight+' kg';document.getElementById('p-goal-weight').textContent=userData.goalWeight+' kg';const am={1.2:'นั่งทำงาน',1.375:'เบาๆ 1-3 วัน',1.55:'ปานกลาง 3-5 วัน',1.725:'หนัก 6-7 วัน',1.9:'นักกีฬา'};document.getElementById('p-activity').textContent=am[userData.activity]||'--';const gm={lose:'⬇️ ลดน้ำหนัก',maintain:'⚖️ คงน้ำหนัก',gain:'⬆️ เพิ่มน้ำหนัก'};document.getElementById('p-goal').textContent=gm[userData.goal]||'--';document.getElementById('p-bmr').textContent=userData.bmr+' kcal/วัน';document.getElementById('p-tdee').textContent=userData.tdee+' kcal/วัน';document.getElementById('p-cal-goal').textContent=userData.calGoal+' kcal/วัน';}
+
+function showTab(tab){['app','stats-page','profile-page','fooddb-page'].forEach(p=>document.getElementById(p).style.display='none');document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));if(tab==='home'){document.getElementById('app').style.display='block';document.getElementById('nav-home').classList.add('active');}else if(tab==='stats'){document.getElementById('stats-page').style.display='block';document.getElementById('nav-stats').classList.add('active');updateStatsPage();}else if(tab==='profile'){document.getElementById('profile-page').style.display='block';document.getElementById('nav-profile').classList.add('active');updateProfilePage();}else if(tab==='fooddb'){document.getElementById('fooddb-page').style.display='block';document.getElementById('nav-fooddb').classList.add('active');renderFoodDB();}}
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+['add-food-modal','edit-modal','adddb-modal'].forEach(id=>{document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});});
+function showConfirm(title,msg,onOk){document.getElementById('confirm-title').textContent=title;document.getElementById('confirm-msg').textContent=msg;confirmCallback=onOk;document.getElementById('confirm-overlay').classList.add('active');}
+function closeConfirm(ok){document.getElementById('confirm-overlay').classList.remove('active');if(ok&&confirmCallback)confirmCallback();confirmCallback=null;}
+function showToast(msg,type='success'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3500);}
+function resetApp(){showConfirm('🗑️ รีเซ็ต','ลบข้อมูลทั้งหมด?',()=>{localStorage.clear();location.reload();});}
+const tips=['💧 ดื่มน้ำก่อนมื้ออาหาร 30 นาที ช่วยลดความหิว 20-30%','🥗 กินผักก่อนช่วยให้อิ่มเร็วขึ้น','🍳 โปรตีนช่วยให้อิ่มนานกว่าคาร์บ','😴 นอนหลับ 7-9 ชม. ช่วยควบคุมฮอร์โมนความหิว','🚶 เดินหลังกินอาหาร 15 นาทีช่วยเผาผลาญ','🍽️ ใช้จานเล็กช่วยลดปริมาณอาหารโดยไม่รู้ตัว','🎵 กินช้าๆ สมองต้องการ 20 นาทีเพื่อรู้ว่าอิ่ม'];
+function getRandomTip(){return tips[Math.floor(Math.random()*tips.length)];}
+</script>
+</body>
+</html>
+
+							<script>
+                            	
+							</script>
+                        </body>
+                        </html>
+                    
